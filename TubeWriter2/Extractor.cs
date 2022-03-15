@@ -32,7 +32,9 @@ class Extractor {
             }
 
             for (int j = 1; j < 5; j++) {
-                Fill(ref sheet, tubeWriter.entryBoxes[i, j]);
+                if (!Fill(ref sheet, tubeWriter.entryBoxes[i, j])) {
+                    return;
+                }
             }
         }
 
@@ -45,13 +47,18 @@ class Extractor {
     }
 
     //Adds tubes in EntryBox range
-    private void Fill(ref ISheet sheet, EntryBox entryBox)
+    private bool Fill(ref ISheet sheet, EntryBox entryBox)
     {
         if (string.IsNullOrEmpty(entryBox.Text)) {
-            return;
+            return true;
         }
 
         List<int> list = Range2Ints(entryBox.Text);
+        List<int> errorlist = new List<int>(){-1};
+
+        if (list.SequenceEqual(errorlist)) {
+            return false;
+        }
 
         foreach (int number in list) {
 
@@ -80,6 +87,8 @@ class Extractor {
             rowCount++;
             start++;
         }
+
+        return true;
     }
 
     //Converts entrybox range into list of ints
@@ -91,33 +100,32 @@ class Extractor {
         try {
             foreach (var subStr in str.Split(delimChars)) {
 
-            if (subStr.Contains('-')) {
+                if (subStr.Contains('-')) {
 
-                int lower = Convert.ToInt32(subStr.Split('-')[0]);
-                int upper = Convert.ToInt32(subStr.Split('-')[1]);
+                    int lower = Convert.ToInt32(subStr.Split('-')[0]);
+                    int upper = Convert.ToInt32(subStr.Split('-')[1]);
 
-                //Check for invalid range entry
-                if (lower > upper) {
-                    MessageBoxButtons buttons = MessageBoxButtons.OK;
-                    DialogResult message = MessageBox.Show("Invalid Range", "Error", buttons);
-                    break;
+                    //Check for invalid range entry
+                    if (lower > upper) {
+                        MessageBoxButtons buttons = MessageBoxButtons.OK;
+                        DialogResult message = MessageBox.Show("Invalid Range", "Error", buttons);
+                        break;
+                    }
+
+                    //Add range to final list
+                    var range = Enumerable.Range(lower, (upper+1)-lower);
+                    result.AddRange(range);
                 }
-
-                //Add range to final list
-                var range = Enumerable.Range(lower, (upper+1)-lower);
-                result.AddRange(range);
+                else {
+                    int number = Convert.ToInt32(subStr);
+                    result.Add(number);
+                }
             }
-            else {
-                int number = Convert.ToInt32(subStr);
-                result.Add(number);
-            }
-        }
         }catch(System.FormatException) {
             MessageBoxButtons buttons = MessageBoxButtons.OK;
             DialogResult message = MessageBox.Show("Invalid character in entry box", "Error", buttons);
+            result = new List<int>(){-1};
         }
-
-        
 
         return result;
     }
